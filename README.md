@@ -41,6 +41,28 @@ The runner raises a clear `ToolError` at dispatch if they're missing. So:
 
    arc discovers it on next start; enable it via `arc subagents`.
 
+## Enforcing delegation (optional but recommended)
+
+The parent session holds the `container_*` / `network_*` tools too (arc
+intersects a sub-agent's tools with the parent registry), so by default the main
+agent *can* orchestrate directly and skip this sub-agent's deploy-then-verify
+discipline. Unlike a capability-locked sub-agent (e.g. a Vertex video analyst,
+where only the child can do the work), nothing is fenced off here — so if you
+want the guarantee, add a policy moat with the built-in `guard` plugin:
+
+```yaml
+# in the guard plugin's config block
+delegate_only_tools:
+  'container_*': subagent_container_expert
+  'network_*': subagent_container_expert
+```
+
+Now a direct `container_*` / `network_*` call from the main session is denied
+with a hint to route through `subagent_container_expert`; the same calls pass
+inside the sub-agent's own session. The dispatch tool itself is never blocked,
+so delegation still works. (Requires arc with `guard.delegate_only_tools`
+support.)
+
 ## Provider — Gemini 3.5 Flash by default, any provider by override
 
 Container orchestration is high-volume, tool-heavy, low-reasoning work, so the
