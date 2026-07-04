@@ -23,7 +23,7 @@ def test_spec_tools_cover_container_and_network(build_ctx):
     spec = build({}, build_ctx)
     # Must reference the cos MCP tools by name plus a host shell.
     for t in ("container_run", "container_ensure", "container_exec",
-              "container_logs", "network_create", "bash_exec"):
+              "container_logs", "network_create", "image_build", "gc", "bash_exec"):
         assert t in spec.tools
     # Recursion is prohibited — no subagent_* in the allowlist.
     assert not any(t.startswith("subagent_") for t in spec.tools)
