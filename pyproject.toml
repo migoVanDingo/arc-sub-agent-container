@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "arc-sub-agent-container"
+version = "0.1.0"
+description = "arc sub-agent: a container-orchestration expert that deploys and health-checks Docker workloads via the cos MCP server."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+keywords = ["arc", "agent", "sub-agent"]
+
+# arc itself is NOT a hard dependency — sub-agent packages import from
+# `arc.subagent_api`, which is provided by the host process at runtime.
+# Declare it as a dev/test dep only, so installing this package doesn't
+# drag arc in for users who only want to inspect or build the wheel.
+dependencies = []
+
+[project.optional-dependencies]
+# `pip install -e ".[dev]"` for local development against a checked-out arc.
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+]
+
+# ── Entry point ────────────────────────────────────────────────────────────
+# arc discovers sub-agents by walking the `arc.subagents` entry-point group.
+# Each entry point resolves to a *builder callable* with signature:
+#
+#   def build(config: dict, build_ctx) -> SubAgentSpec
+#
+# `config` is reserved for future use; for now it's typically `{}`. Users
+# override spec fields (model, timeout, system_prompt) via the `subagents:`
+# block in arc's config.yml, which the Registry merges AFTER build() runs.
+# Don't read config inside build() — let the Registry's override mechanism
+# do its job.
+#
+# `build_ctx` is an arc.subagent_api.SubAgentBuildContext (reserved; minimal
+# for v0.1).
+#
+# The entry-point NAME is what appears in arc as the spec's registry key
+# and in the parent's tool registry as `subagent_<name>`. Rename it when
+# you fork this template.
+#
+# A package shipping multiple specs registers multiple entry points — one
+# per spec.
+[project.entry-points."arc.subagents"]
+container_expert = "arc_sub_agent_container.spec:build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arc_sub_agent_container"]
+
+# Include the prompts directory so wheels carry the system prompt files.
+[tool.hatch.build.targets.wheel.force-include]
+"src/arc_sub_agent_container/prompts" = "arc_sub_agent_container/prompts"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
