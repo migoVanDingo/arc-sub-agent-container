@@ -63,6 +63,20 @@ inside the sub-agent's own session. The dispatch tool itself is never blocked,
 so delegation still works. (Requires arc with `guard.delegate_only_tools`
 support.)
 
+> **⚠️ Enforcement note (updated after the 2026-07 mitigation pass).** Child
+> sessions now inherit a **hard-denylist guard** built from the parent's
+> blocklist (`agent-runtime/_mitigation/07`), so a sub-agent's `bash_exec` can no
+> longer run `rm -rf`, `dd`, `mkfs`, fork bombs, block-device writes, or **raw
+> `docker`** — that closes the "shell out to `docker run --privileged`" escape.
+> `curl` (health checks) and file writes stay allowed so the sub-agent still
+> works. **Residual:** `bash_exec` is still a general host shell (it can read
+> host files, write to disk, run arbitrary non-blocklisted commands), and the
+> child runs against a provider that sees host/container output. The full fix —
+> replacing `bash_exec` with a temp-dir-scoped write tool + a curl tool — is
+> future work. Treat this sub-agent as **semi-trusted**: the catastrophic
+> commands are blocked, but it is not a sandbox. See
+> `agent-runtime/_code_review/02-security-audit.md` (H1/H2).
+
 ## Provider — Gemini 3.5 Flash by default, any provider by override
 
 Container orchestration is high-volume, tool-heavy, low-reasoning work, so the
