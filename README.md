@@ -69,13 +69,14 @@ support.)
 > longer run `rm -rf`, `dd`, `mkfs`, fork bombs, block-device writes, or **raw
 > `docker`** — that closes the "shell out to `docker run --privileged`" escape.
 > `curl` (health checks) and file writes stay allowed so the sub-agent still
-> works. **Residual:** `bash_exec` is still a general host shell (it can read
-> host files, write to disk, run arbitrary non-blocklisted commands), and the
-> child runs against a provider that sees host/container output. The full fix —
-> replacing `bash_exec` with a temp-dir-scoped write tool + a curl tool — is
-> future work. Treat this sub-agent as **semi-trusted**: the catastrophic
-> commands are blocked, but it is not a sandbox. See
-> `agent-runtime/_code_review/02-security-audit.md` (H1/H2).
+> works. **`bash_exec` is kept deliberately (accepted risk, 2026-07-06):** it can
+> still read host files / run arbitrary non-blocklisted commands, and the child
+> runs against a provider that sees the output — but dispatches are **stateless**
+> (no cross-dispatch memory), so the sub-agent needs a general shell to improvise
+> and finish a task in one shot. For a single trusted operator that trade is
+> worth it. **Revisit only if you point this sub-agent at untrusted/adversarial
+> input** — then replace `bash_exec` with scoped `write_build_file`/`http_check`
+> tools. See `agent-runtime/_code_review/02-security-audit.md` (H2).
 
 ## Provider — Gemini 3.5 Flash by default, any provider by override
 
